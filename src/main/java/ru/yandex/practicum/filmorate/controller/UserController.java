@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.controller;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.*;
+import ru.yandex.practicum.filmorate.model.Unit;
 import ru.yandex.practicum.filmorate.model.User;
 
 import javax.validation.Valid;
@@ -16,18 +17,20 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/users")
-public class UserController {
+public class UserController extends UnitController<User>{
 
     private final Map<Long, User> allUsers = new HashMap<>();
     private LocalDate today = LocalDate.now();
-    private Long nextIdCounter = 0L;
+    protected Long nextIdCounter = 0L;
 
-    private Long getNextIdCounter() {
+    protected Long getNextIdCounter() {
         nextIdCounter++;
         return nextIdCounter;
     }
 
-    public void userValidation(User user) throws InvalidEmailException, ValidationException {
+    @Override
+    public void validation(User user) throws InvalidEmailException, ValidationException {
+
         if(user.getEmail()==null || user.getEmail().isBlank()){
             throw new InvalidEmailException("E-mail is empty or blank");
         }
@@ -42,17 +45,18 @@ public class UserController {
         }
     }
 
-
+    @Override
     @GetMapping
-    public List<User> getAllUsers() {
+    public List<User> getAll (){
         return new ArrayList<>(allUsers.values());
     }
 
 
+    @Override
     @PutMapping
-    public User updateUser(@Valid @RequestBody User user) throws InvalidEmailException, ValidationException {
+    public User update(@Valid @RequestBody User user) throws ValidationException, InvalidEmailException {
         log.info("Запрос на обновление пользователя получен");
-        userValidation(user);
+        validation(user);
         if(user.getName().isEmpty() || user.getName().isBlank()){
             user.setName(user.getLogin());
         }
@@ -66,10 +70,11 @@ public class UserController {
         return user;
     }
 
+    @Override
     @PostMapping
-    public User createUser(@Valid @RequestBody User user) throws InvalidEmailException, UserAlreadyExistException, ValidationException {
+    public User create(@Valid @RequestBody User user) throws ValidationException, UserAlreadyExistException, InvalidEmailException {
         log.info("Запрос на добавление пользователя получен");
-        userValidation(user);
+        validation(user);
         if(allUsers.containsKey(user.getId())){
             throw new UserAlreadyExistException("User with this "+user.getId()+" exist");
         }

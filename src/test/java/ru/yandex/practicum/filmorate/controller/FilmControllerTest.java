@@ -34,7 +34,7 @@ class FilmControllerTest {
         film.setName("");
         final IOException exception = assertThrows(
                 ValidationException.class,
-                () -> filmController.filmValidation(film));
+                () -> filmController.validation(film));
         assertEquals("Film's name is empty or blank", exception.getMessage());
     }
 
@@ -43,7 +43,7 @@ class FilmControllerTest {
         film.setName(" ");
         final IOException exception = assertThrows(
                 ValidationException.class,
-                () -> filmController.filmValidation(film));
+                () -> filmController.validation(film));
         assertEquals("Film's name is empty or blank", exception.getMessage());
     }
 
@@ -54,7 +54,7 @@ class FilmControllerTest {
                 "Сценарий последнего основан на его же одноимённой пьесе, написанной в 1981 году");
         final IOException exception = assertThrows(
                 ValidationException.class,
-                () -> filmController.filmValidation(film));
+                () -> filmController.validation(film));
         assertEquals("The description of the film should be no more than 200 characters", exception.getMessage());
     }
 
@@ -64,7 +64,7 @@ class FilmControllerTest {
         film.setReleaseDate(localDate);
         final IOException exception = assertThrows(
                 ValidationException.class,
-                () -> filmController.filmValidation(film));
+                () -> filmController.validation(film));
         assertEquals("The release date is too early", exception.getMessage());
     }
 
@@ -73,12 +73,12 @@ class FilmControllerTest {
         film.setDuration(0);
         final IOException exception = assertThrows(
                 ValidationException.class,
-                () -> filmController.filmValidation(film));
+                () -> filmController.validation(film));
         assertEquals("The duration of the film should be more than 0", exception.getMessage());
         film.setDuration(-1);
         final IOException exception2 = assertThrows(
                 ValidationException.class,
-                () -> filmController.filmValidation(film));
+                () -> filmController.validation(film));
         assertEquals("The duration of the film should be more than 0", exception2.getMessage());
     }
 

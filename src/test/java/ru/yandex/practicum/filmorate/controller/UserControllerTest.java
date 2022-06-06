@@ -33,7 +33,7 @@ class UserControllerTest {
         user.setEmail("");
         final IOException exception = assertThrows(
                 InvalidEmailException.class,
-                () -> userController.userValidation(user));
+                () -> userController.validation(user));
         assertEquals("E-mail is empty or blank", exception.getMessage());
     }
 
@@ -42,7 +42,7 @@ class UserControllerTest {
         user.setEmail(" ");
         final IOException exception = assertThrows(
                 InvalidEmailException.class,
-                () -> userController.userValidation(user));
+                () -> userController.validation(user));
         assertEquals("E-mail is empty or blank", exception.getMessage());
     }
 
@@ -51,7 +51,7 @@ class UserControllerTest {
         user.setEmail("gagarin-kosmos.ru");
         final IOException exception = assertThrows(
                 InvalidEmailException.class,
-                () -> userController.userValidation(user));
+                () -> userController.validation(user));
         assertEquals("Incorrect e-mail", exception.getMessage());
     }
 
@@ -60,7 +60,7 @@ class UserControllerTest {
         user.setLogin("");
         final IOException exception = assertThrows(
                 ValidationException.class,
-                () -> userController.userValidation(user));
+                () -> userController.validation(user));
         assertEquals("The login must not be empty and contain spaces", exception.getMessage());
     }
 
@@ -69,7 +69,7 @@ class UserControllerTest {
         user.setLogin("first In Space");
         final IOException exception = assertThrows(
                 ValidationException.class,
-                () -> userController.userValidation(user));
+                () -> userController.validation(user));
         assertEquals("The login must not be empty and contain spaces", exception.getMessage());
     }
 
@@ -79,7 +79,7 @@ class UserControllerTest {
         user.setBirthday(localDate);
         final IOException exception = assertThrows(
                 ValidationException.class,
-                () -> userController.userValidation(user));
+                () -> userController.validation(user));
         assertEquals("Incorrect birthday", exception.getMessage());
     }
 
