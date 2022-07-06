@@ -6,6 +6,8 @@ import org.junit.jupiter.api.function.Executable;
 import ru.yandex.practicum.filmorate.exception.InvalidEmailException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.service.FilmService;
+import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -15,7 +17,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class FilmControllerTest {
     Film film;
-    FilmController filmController = new FilmController();
+    InMemoryFilmStorage inMemoryFilmStorage = new InMemoryFilmStorage();
+    FilmService filmService = new FilmService(inMemoryFilmStorage);
+
 
 
     @BeforeEach
@@ -34,7 +38,7 @@ class FilmControllerTest {
         film.setName("");
         final IOException exception = assertThrows(
                 ValidationException.class,
-                () -> filmController.validation(film));
+                () -> filmService.validation(film));
         assertEquals("Film's name is empty or blank", exception.getMessage());
     }
 
@@ -43,7 +47,7 @@ class FilmControllerTest {
         film.setName(" ");
         final IOException exception = assertThrows(
                 ValidationException.class,
-                () -> filmController.validation(film));
+                () -> filmService.validation(film));
         assertEquals("Film's name is empty or blank", exception.getMessage());
     }
 
@@ -54,7 +58,7 @@ class FilmControllerTest {
                 "Сценарий последнего основан на его же одноимённой пьесе, написанной в 1981 году");
         final IOException exception = assertThrows(
                 ValidationException.class,
-                () -> filmController.validation(film));
+                () -> filmService.validation(film));
         assertEquals("The description of the film should be no more than 200 characters", exception.getMessage());
     }
 
@@ -64,7 +68,7 @@ class FilmControllerTest {
         film.setReleaseDate(localDate);
         final IOException exception = assertThrows(
                 ValidationException.class,
-                () -> filmController.validation(film));
+                () -> filmService.validation(film));
         assertEquals("The release date is too early", exception.getMessage());
     }
 
@@ -73,12 +77,12 @@ class FilmControllerTest {
         film.setDuration(0);
         final IOException exception = assertThrows(
                 ValidationException.class,
-                () -> filmController.validation(film));
+                () -> filmService.validation(film));
         assertEquals("The duration of the film should be more than 0", exception.getMessage());
         film.setDuration(-1);
         final IOException exception2 = assertThrows(
                 ValidationException.class,
-                () -> filmController.validation(film));
+                () -> filmService.validation(film));
         assertEquals("The duration of the film should be more than 0", exception2.getMessage());
     }
 

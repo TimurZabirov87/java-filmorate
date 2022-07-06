@@ -2,10 +2,11 @@ package ru.yandex.practicum.filmorate.controller;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
 import ru.yandex.practicum.filmorate.exception.InvalidEmailException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.UserService;
+import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -15,7 +16,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class UserControllerTest {
     User user;
-    UserController userController = new UserController();
+    InMemoryUserStorage inMemoryUserStorage = new InMemoryUserStorage();
+    UserService userService = new UserService(inMemoryUserStorage);
+
 
     @BeforeEach
     void newUserCreate() {
@@ -33,7 +36,7 @@ class UserControllerTest {
         user.setEmail("");
         final IOException exception = assertThrows(
                 InvalidEmailException.class,
-                () -> userController.validation(user));
+                () -> userService.validation(user));
         assertEquals("E-mail is empty or blank", exception.getMessage());
     }
 
@@ -42,7 +45,7 @@ class UserControllerTest {
         user.setEmail(" ");
         final IOException exception = assertThrows(
                 InvalidEmailException.class,
-                () -> userController.validation(user));
+                () -> userService.validation(user));
         assertEquals("E-mail is empty or blank", exception.getMessage());
     }
 
@@ -51,7 +54,7 @@ class UserControllerTest {
         user.setEmail("gagarin-kosmos.ru");
         final IOException exception = assertThrows(
                 InvalidEmailException.class,
-                () -> userController.validation(user));
+                () -> userService.validation(user));
         assertEquals("Incorrect e-mail", exception.getMessage());
     }
 
@@ -60,7 +63,7 @@ class UserControllerTest {
         user.setLogin("");
         final IOException exception = assertThrows(
                 ValidationException.class,
-                () -> userController.validation(user));
+                () -> userService.validation(user));
         assertEquals("The login must not be empty and contain spaces", exception.getMessage());
     }
 
@@ -69,7 +72,7 @@ class UserControllerTest {
         user.setLogin("first In Space");
         final IOException exception = assertThrows(
                 ValidationException.class,
-                () -> userController.validation(user));
+                () -> userService.validation(user));
         assertEquals("The login must not be empty and contain spaces", exception.getMessage());
     }
 
@@ -79,7 +82,7 @@ class UserControllerTest {
         user.setBirthday(localDate);
         final IOException exception = assertThrows(
                 ValidationException.class,
-                () -> userController.validation(user));
+                () -> userService.validation(user));
         assertEquals("Incorrect birthday", exception.getMessage());
     }
 

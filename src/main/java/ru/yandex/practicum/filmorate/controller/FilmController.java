@@ -1,71 +1,45 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exception.InvalidIdException;
-import ru.yandex.practicum.filmorate.exception.FilmAlreadyExistException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.exception.*;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.Unit;
+import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.FilmService;
+import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
+
 
 import javax.validation.Valid;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.Month;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @RestController
 @RequestMapping("/films")
 public class FilmController extends UnitController<Film> {
 
-    private final Map<Long, Film> allFilms = new HashMap<>();
-    private final LocalDate cinemasBirthday = LocalDate.of(1895, Month.DECEMBER, 28);
-    private final static int MAX_DESCRIPTION_LENGTH = 200;
-    protected Long nextIdCounter = 0L;
+    private FilmService filmService;
 
-    protected Long getNextIdCounter() {
-        nextIdCounter++;
-        return nextIdCounter;
+    @Autowired
+    public FilmController(FilmService filmService) {
+        this.filmService = filmService;
     }
 
-
-    @Override
-    public void validation(Film film) throws ValidationException {
-        if(film.getName()==null || film.getName().isBlank()){
-            throw new ValidationException("Film's name is empty or blank");
-        }
-        if(film.getDescription().length() > MAX_DESCRIPTION_LENGTH){
-            throw new ValidationException("The description of the film should be no more than 200 characters");
-        }
-        if(film.getReleaseDate().isBefore(cinemasBirthday)){
-            throw new ValidationException("The release date is too early");
-        }
-        if(film.getDuration() <= 0){
-            throw new ValidationException("The duration of the film should be more than 0");
-        }
-    }
 
     @GetMapping
-    @Override
-    public List<Film> getAll() {
-        return new ArrayList<>(allFilms.values());
+    public Collection<Film> getAll() {
+        return filmService.getAllFilms();
     }
-
 
     @Override
     @PutMapping
     public Film update(@Valid @RequestBody Film film) throws InvalidIdException, ValidationException {
         log.info("Запрос на обновление фильма получен");
-        validation(film);
-        if(allFilms.containsKey(film.getId())){
-            allFilms.put(film.getId(), film);
-            log.info("Film " + film + "updated");
-        } else {
-            throw new InvalidIdException("Film not found");
-        }
+        filmService.updateFilm(film);
         return film;
     }
 
@@ -73,14 +47,74 @@ public class FilmController extends UnitController<Film> {
     @PostMapping
     public Film create(@Valid @RequestBody Film film) throws FilmAlreadyExistException, ValidationException {
         log.info("Запрос на добавление фильма получен");
-        validation(film);
-        if(allFilms.containsKey(film.getId())){
-            throw new FilmAlreadyExistException("Film with this id: "+film.getId()+" exist");
-        }
-        film.setId(getNextIdCounter());
-        allFilms.put(film.getId(), film);
-        log.info("Film " + film + "created");
+        filmService.createFilm(film);
         return film;
     }
+
+    @GetMapping("/{id}")
+    public Film getById(@PathVariable Long id) throws FilmNotFoundException {
+        return filmService.getFilmById(id);
+    }
+
+    @PutMapping("/{id}/like/{userId}")
+    public Film addLike (@PathVariable Long id, @PathVariable Long userId) throws FilmNotFoundException {
+        return filmService.addLike(id, userId);
+    }
+
+    @DeleteMapping("/{id}/like/{userId}")
+    public Film deleteLike(@PathVariable Long id, @PathVariable Long userId) throws FilmNotFoundException, InvalidIdException {
+        return filmService.removeLike(id, userId);
+    }
+
+    @GetMapping("/popular")
+    public List<Film> getMostPopularFilms (@RequestParam(defaultValue = "10") int count) {
+        if (count < 1) {
+            return filmService.getMostPopularFilms(10);
+        } else {
+            return filmService.getMostPopularFilms(count);
+        }
+    }
+
+    @ExceptionHandler ({FilmNotFoundException.class, UserNotFoundException.class, InvalidIdException.class})
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public String handleFilmNotFound(final IOException e) {
+        return e.getMessage();
+    }
+
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public String handleValidation(final ValidationException e) {
+        return e.getMessage();
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public String handleValidationErr(final javax.validation.ValidationException e) {
+        return e.getMessage();
+    }
+
+
+    @ExceptionHandler({FilmAlreadyExistException.class})
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public String handleException(final IOException e) {
+        return e.getMessage();
+    }
+
+
+    /*
+С помощью аннотации @PathVariable добавьте возможность получать
+каждый фильм и данные о пользователях по их уникальному идентификатору: GET .../users/{id}.
+Добавьте методы, позволяющие пользователям добавлять друг друга в друзья,
+получать список общих друзей и лайкать фильмы. Проверьте, что все они работают корректно.
+PUT /films/{id}/like/{userId} — пользователь ставит лайк фильму.
+DELETE /films/{id}/like/{userId} — пользователь удаляет лайк.
+GET /films/popular?count={count} — возвращает список из первых count фильмов по количеству лайков.
+Если значение параметра count не задано, верните первые 10.
+Убедитесь, что ваше приложение возвращает корректные HTTP-коды.
+400 — если ошибка валидации: ValidationException;
+404 — для всех ситуаций, если искомый объект не найден;
+500 — если возникло исключение.
+     */
 }
 
