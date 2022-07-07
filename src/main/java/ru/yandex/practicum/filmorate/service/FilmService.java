@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 import ru.yandex.practicum.filmorate.exception.*;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
 
 import java.time.LocalDate;
@@ -24,14 +24,12 @@ public class FilmService {
 
     private final LocalDate cinemasBirthday = LocalDate.of(1895, Month.DECEMBER, 28);
     private final static int MAX_DESCRIPTION_LENGTH = 200;
-    private FilmLikesComparator filmLikesComparator = new FilmLikesComparator();
-    protected final TreeSet<Film> mostPopularFilms = new TreeSet<>(filmLikesComparator);
 
-    private InMemoryFilmStorage inMemoryFilmStorage;
+    private FilmStorage filmStorage;
 
     @Autowired
-    public FilmService(InMemoryFilmStorage inMemoryFilmStorage) {
-        this.inMemoryFilmStorage = inMemoryFilmStorage;
+    public FilmService(FilmStorage filmStorage) {
+        this.filmStorage = filmStorage;
     }
 
 
@@ -52,20 +50,20 @@ public class FilmService {
     }
 
     public Collection<Film> getAllFilms() {
-        return inMemoryFilmStorage.getAllUnits().values();
+        return filmStorage.getAllFilms().values();
     }
 
     public Film getFilmById (Long id) throws FilmNotFoundException {
-        if (!inMemoryFilmStorage.getAllUnits().containsKey(id)) {
+        if (!filmStorage.getAllFilms().containsKey(id)) {
             throw new FilmNotFoundException("Фильм с id: " + id + " не найден");
         }
-        return inMemoryFilmStorage.getAllUnits().get(id);
+        return filmStorage.getAllFilms().get(id);
     }
 
     public Film updateFilm(Film film) throws InvalidIdException, ValidationException {
         validation(film);
-        if(inMemoryFilmStorage.getAllUnits().containsKey(film.getId())){
-            inMemoryFilmStorage.update(film);
+        if(filmStorage.getAllFilms().containsKey(film.getId())){
+            filmStorage.update(film);
             log.info("Film " + film + "updated");
         } else {
             throw new InvalidIdException("Film not found");
@@ -75,38 +73,36 @@ public class FilmService {
 
     public Film createFilm(Film film) throws FilmAlreadyExistException, ValidationException {
         validation(film);
-        if(inMemoryFilmStorage.getAllUnits().containsKey(film.getId())){
+        if(filmStorage.getAllFilms().containsKey(film.getId())){
             throw new FilmAlreadyExistException("Film with this id: "+film.getId()+" exist");
         }
-        inMemoryFilmStorage.create(film);
+        filmStorage.create(film);
         log.info("Film " + film + " id: " + film.getId() + " created");
         return film;
     }
 
     public Film addLike(Long filmId, Long userId) throws FilmNotFoundException {
-        if (!inMemoryFilmStorage.getAllUnits().containsKey(filmId)) {
+        if (!filmStorage.getAllFilms().containsKey(filmId)) {
             throw new FilmNotFoundException("Фильм с id: " + filmId + " не найден");
         }
         getFilmById(filmId).getLikes().add(userId);
-        return inMemoryFilmStorage.getUnitById(filmId);
+        return filmStorage.getUnitById(filmId);
     }
 
     public Film removeLike(Long filmId, Long userId) throws InvalidIdException, FilmNotFoundException {
-        if (!inMemoryFilmStorage.getAllUnits().containsKey(filmId)) {
+        if (!filmStorage.getAllFilms().containsKey(filmId)) {
             throw new FilmNotFoundException("Фильм с id: " + filmId + " не найден");
         }
-        if (!inMemoryFilmStorage.getUnitById(filmId).getLikes().contains(userId)) {
+        if (!filmStorage.getUnitById(filmId).getLikes().contains(userId)) {
             throw new InvalidIdException("Лайк от пользователя с id: " + userId + " для фильма с id: " + filmId + " не найден");
         }
-        inMemoryFilmStorage.getUnitById(filmId).getLikes().remove(userId);
-        return inMemoryFilmStorage.getUnitById(filmId);
+        filmStorage.getUnitById(filmId).getLikes().remove(userId);
+        return filmStorage.getUnitById(filmId);
     }
 
     public List<Film> getMostPopularFilms (int count) {
-        for (Film film : inMemoryFilmStorage.getAllUnits().values()) {
-            mostPopularFilms.add(film);
-        }
-        List<Film> mostPopularFilmsList = new ArrayList<>(mostPopularFilms);
+        List<Film> mostPopularFilmsList = new ArrayList<>(filmStorage.getAllFilms().values());
+        mostPopularFilmsList.sort((f1, f2) -> f2.getLikes().size() - f1.getLikes().size());
         if (mostPopularFilmsList.size() < count) {
             return mostPopularFilmsList;
         } else {
@@ -114,18 +110,4 @@ public class FilmService {
         }
     }
 
-    static class FilmLikesComparator implements Comparator<Film> {
-        @Override
-        public int compare(Film film1, Film film2) {
-            if (film1.getLikes().size() > film2.getLikes().size()) {
-                return -1;
-
-            } else if (film2.getLikes().size() > film1.getLikes().size()) {
-                return 1;
-
-            } else {
-                return 0;
-            }
-        }
-    }
 }

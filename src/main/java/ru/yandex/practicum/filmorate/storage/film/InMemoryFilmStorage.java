@@ -1,19 +1,47 @@
 package ru.yandex.practicum.filmorate.storage.film;
 
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.filmorate.exception.InvalidIdException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.Unit;
-import ru.yandex.practicum.filmorate.storage.InMemoryUnitStorage;
+import java.util.HashMap;
+import java.util.Map;
 
-import java.time.LocalDate;
-import java.time.Month;
 
-/*
-Создайте классы InMemoryFilmStorage и InMemoryUserStorage, имплементирующие новые интерфейсы,
-и перенесите туда всю логику хранения, обновления и поиска объектов.
- */
 @Component
-public class InMemoryFilmStorage extends InMemoryUnitStorage<Film> {
+public class InMemoryFilmStorage implements FilmStorage {
+    private Long nextIdCounter = 0L;
+    private Map<Long, Film> allFilms = new HashMap<>();
+
+    @Override
+    public Map<Long, Film> getAllFilms() {
+        return allFilms;
+    }
+
+    Long getNextIdCounter() {
+        nextIdCounter++;
+        return nextIdCounter;
+    }
+
+    public Film getUnitById(Long id) {
+        return allFilms.get(id);
+    }
+
+    @Override
+    public Film create(Film film) {
+        film.setId(getNextIdCounter());
+        allFilms.put(film.getId(), film);
+        return film;
+    }
+
+    @Override
+    public Film update(Film film) {
+        allFilms.put(film.getId(), film);
+        return film;
+    }
+
+    @Override
+    public Film delete(Film film) {
+        allFilms.remove(film.getId());
+        return film;
+    }
 
 }

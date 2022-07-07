@@ -3,11 +3,11 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import ru.yandex.practicum.filmorate.exception.*;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import javax.validation.Valid;
 import java.time.LocalDate;
@@ -27,11 +27,11 @@ public class UserService {
 
     private LocalDate today = LocalDate.now();
 
-    private InMemoryUserStorage inMemoryUserStorage;
+    private UserStorage userStorage;
 
     @Autowired
-    public UserService(InMemoryUserStorage inMemoryUserStorage) {
-        this.inMemoryUserStorage = inMemoryUserStorage;
+    public UserService(UserStorage userStorage) {
+        this.userStorage = userStorage;
     }
 
     public void validation(User user) throws InvalidEmailException, ValidationException {
@@ -55,8 +55,8 @@ public class UserService {
         if(user.getName().isEmpty() || user.getName().isBlank()){
             user.setName(user.getLogin());
         }
-        if(inMemoryUserStorage.getAllUnits().containsKey(user.getId())){
-            inMemoryUserStorage.update(user);
+        if(userStorage.getAllUsers().containsKey(user.getId())){
+            userStorage.update(user);
             log.info("User " + user + "updated");
         } else {
             throw new InvalidIdException("User " + user.getId().intValue() + "not found");
@@ -66,22 +66,22 @@ public class UserService {
 
     public User createUser(@Valid @RequestBody User user) throws UserAlreadyExistException, ValidationException, InvalidEmailException {
         validation(user);
-        if(inMemoryUserStorage.getAllUnits().containsKey(user.getId())){
+        if(userStorage.getAllUsers().containsKey(user.getId())){
             throw new UserAlreadyExistException("User with this "+user.getId()+" exist");
         }
         if(user.getName().isEmpty() || user.getName().isBlank()){
             user.setName(user.getLogin());
         }
-        inMemoryUserStorage.create(user);
+        userStorage.create(user);
         log.info("User " + user + "created");
         return user;
     }
 
     public User getUserById (Long id) throws UserNotFoundException {
-        if (!inMemoryUserStorage.getAllUnits().containsKey(id)) {
+        if (!userStorage.getAllUsers().containsKey(id)) {
             throw new UserNotFoundException("Пользователь с id: " + id + " не найден");
         }
-        return inMemoryUserStorage.getUnitById(id);
+        return userStorage.getUnitById(id);
     }
 
     public List<User> getUsersFriends (Long id) throws UserNotFoundException {
@@ -95,43 +95,43 @@ public class UserService {
     }
 
     public Collection<User> getAllUsers() {
-        return inMemoryUserStorage.getAllUnits().values();
+        return userStorage.getAllUsers().values();
     }
 
     public void addToFriends (Long id1, Long id2) throws UserNotFoundException {
-        if (!inMemoryUserStorage.getAllUnits().containsKey(id1)) {
+        if (!userStorage.getAllUsers().containsKey(id1)) {
             throw new UserNotFoundException("Пользователь с id: " + id1 + " не найден");
         }
-        if (!inMemoryUserStorage.getAllUnits().containsKey(id2)) {
+        if (!userStorage.getAllUsers().containsKey(id2)) {
             throw new UserNotFoundException("Пользователь с id: " + id2 + " не найден");
         }
-        inMemoryUserStorage.getUnitById(id1).getFriends().add(id2);
-        inMemoryUserStorage.getUnitById(id2).getFriends().add(id1);
+        userStorage.getUnitById(id1).getFriends().add(id2);
+        userStorage.getUnitById(id2).getFriends().add(id1);
     }
 
     public void deleteFromFriends (Long id1, Long id2) throws UserNotFoundException {
-        if (!inMemoryUserStorage.getAllUnits().containsKey(id1)) {
+        if (!userStorage.getAllUsers().containsKey(id1)) {
             throw new UserNotFoundException("Пользователь с id: " + id1 + " не найден");
         }
-        if (!inMemoryUserStorage.getAllUnits().containsKey(id2)) {
+        if (!userStorage.getAllUsers().containsKey(id2)) {
             throw new UserNotFoundException("Пользователь с id: " + id2 + " не найден");
         }
-        if (!inMemoryUserStorage.getAllUnits().get(id1).getFriends().contains(id2)) {
+        if (!userStorage.getAllUsers().get(id1).getFriends().contains(id2)) {
             throw new UserNotFoundException("Пользователь с id: " + id2 + " не найден  друзьях у пользователя с id: " + id1);
         }
-        if (!inMemoryUserStorage.getAllUnits().get(id2).getFriends().contains(id1)) {
+        if (!userStorage.getAllUsers().get(id2).getFriends().contains(id1)) {
             throw new UserNotFoundException("Пользователь с id: " + id1 + " не найден  друзьях у пользователя с id: " + id2);
         }
-        inMemoryUserStorage.getUnitById(id1).getFriends().remove(id2);
-        inMemoryUserStorage.getUnitById(id2).getFriends().remove(id1);
+        userStorage.getUnitById(id1).getFriends().remove(id2);
+        userStorage.getUnitById(id2).getFriends().remove(id1);
     }
 
     public List<User> showCommonFriends (Long id1, Long id2) {
         List<User> commonFriends = new ArrayList<>();
-        if (!inMemoryUserStorage.getAllUnits().get(id1).getFriends().isEmpty() && !inMemoryUserStorage.getAllUnits().get(id2).getFriends().isEmpty()) {
-            for (Long id : inMemoryUserStorage.getAllUnits().get(id1).getFriends()) {
-                if (inMemoryUserStorage.getAllUnits().get(id2).getFriends().contains(id)) {
-                    commonFriends.add(inMemoryUserStorage.getUnitById(id));
+        if (!userStorage.getAllUsers().get(id1).getFriends().isEmpty() && !userStorage.getAllUsers().get(id2).getFriends().isEmpty()) {
+            for (Long id : userStorage.getAllUsers().get(id1).getFriends()) {
+                if (userStorage.getAllUsers().get(id2).getFriends().contains(id)) {
+                    commonFriends.add(userStorage.getUnitById(id));
                 }
             }
         }
