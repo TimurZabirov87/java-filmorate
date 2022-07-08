@@ -5,6 +5,8 @@ import lombok.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -19,4 +21,14 @@ public class Film extends Unit{
     private String description;
     private LocalDate releaseDate;
     private Integer duration;
+    private Set<Long> likes = new HashSet<>();
+
+    @Override
+    public String toString() {
+        return "Film{" +
+                ", description='" + description + '\'' +
+                ", likes=" + likes +
+                ", id=" + id +
+                '}';
+    }
 }
